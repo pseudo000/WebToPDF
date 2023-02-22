@@ -1,0 +1,2 @@
+print("exiting the program")
+print(quit())
