@@ -24,8 +24,8 @@ root.resizable(False,False)
 root.geometry("500x600")
 
 
-
-#기본 다운로드 경로 선택
+#깃허브 병신같음
+#기본 다운로드 경로 선택 
 def add_path():
     addpath_selected = filedialog.askdirectory()
     if addpath_selected == '': #사용자가 취소를 누를 때
