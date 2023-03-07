@@ -71,7 +71,7 @@ def PrintSetUp():
         "isLandscapeEnabled": False,
         "pageSize": 'A4',
         "scalingType": 3,
-        "scaling": "50",
+        "scaling": "40",
         "isHeaderFooterEnabled": False,
         "isCssBackgroundEnabled": True,
         "isColorEnabled": False,
