@@ -48,7 +48,7 @@ def WebToPDF(url):
     time.sleep(12)
     driver.quit()
 
-xl_file_path = 'C:\\import\\HSCODE.xlsx'
+xl_file_path = 'C:\\import\\HSCODE.xlsx'    
 
 workbook = openpyxl.load_workbook(xl_file_path, data_only=True)
 worksheet = workbook.worksheets[0]
@@ -63,13 +63,13 @@ for row, item in enumerate(worksheet.rows):
     
             file_base = str(file_name) + ".pdf"
             file_count =+ 1
-            filename = os.path.join('C:\\Users\\swwoo\\Downloads', f"{file_name} ({file_count}).pdf")
+            filename = os.path.join('C:\\Users\\pseudo\\Downloads', f"{file_name} ({file_count}).pdf")
     
             while os.path.exists(filename):
                 file_count += 1
-                filename = os.path.join('C:\\Users\\swwoo\\Downloads', f"{file_name} ({file_count}).pdf")
+                filename = os.path.join('C:\\Users\\pseudo\\Downloads', f"{file_name} ({file_count}).pdf")
         
-            shutil.move(max(['C:\\Users\\swwoo\\Downloads' + "\\" + f for f in os.listdir('C:\\Users\\swwoo\\Downloads')], key=os.path.getctime), filename)
+            shutil.move(max(['C:\\Users\\pseudo\\Downloads' + "\\" + f for f in os.listdir('C:\\Users\\pseudo\\Downloads')], key=os.path.getctime), filename)
 
         except Exception as e:
             # print(f'Error processing URL {url}: {e}')

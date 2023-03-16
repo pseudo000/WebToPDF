@@ -122,7 +122,7 @@ def start_process():
                     file_count += 1
                     filename = os.path.join(adddrpath_selected, f"{file_name} ({file_count}).pdf")
             
-                shutil.move(max([adddrpath_selected + "\\" + f for f in os.listdir(adddrpath_selected)], key=os.path.getctime), filename)  #'C:\\Users\\swwoo\\Downloads'
+                shutil.move(max([adddrpath_selected + "\\" + f for f in os.listdir(adddrpath_selected)], key=os.path.getmtime), filename)  #'C:\\Users\\swwoo\\Downloads'
 
             except Exception as e:
                 # print(f'Error processing URL {url}: {e}')
@@ -173,21 +173,33 @@ def check_pdf_excel():
     pdf_dict = {}
     for pdf in os.listdir(pdf_folder_path):
         if pdf.endswith(".pdf"):
-            pdf_name = os.path.splitext(pdf)[0].split("(")[0].strip()  # 파일 이름에서 (1), (2) 등의 부분 제외
-            pdf_path = os.path.join(pdf_folder_path, pdf)
-            pdf_dict[pdf_name] = pdf_path
+            # pdf_name = os.path.splitext(pdf)[0].split("(")[0].strip()  # 파일 이름에서 (1), (2) 등의 부분 제외
+            # pdf_path = os.path.join(pdf_folder_path, pdf)
+            # pdf_dict[pdf_name] = pdf_path
+            pdf_name = os.path.splitext(pdf)[0]  # 확장자를 제외한 파일 이름만 가져옴
+            pdf_path = os.path.join(pdf_folder_path, pdf)  # 폴더 경로와 파일 이름을 결합하여 PDF 파일의 전체 경로를 생성
+            pdf_dict[pdf_name] = pdf_path  # 생성한 PDF 파일 경로를 딕셔너리 객체에 저장
 
     # 엑셀 파일 열기
     workbook = load_workbook(filename=excel_file_path)
     worksheet = workbook.active
 
     # A 열에서 PDF 파일 이름 가져오기
-    pdf_files = [cell.value for cell in worksheet['A'][1:]]
+    # pdf_files = [cell.value for cell in worksheet['A'][1:]]
+    pdf_files = []
+    for cell in worksheet['A'][1:]:
+        filename = cell.value
+        count = 1
+        while filename in pdf_files:
+            count += 1
+            filename = f"{os.path.splitext(cell.value)[0]} ({count}){os.path.splitext(cell.value)[1]}"
+        pdf_files.append(filename)
+
 
     # C 열에서 PDF 파일 이름에 해당하는 값 가져오기
     for row in worksheet.iter_rows(min_row=2, min_col=3, max_col=3):
         for cell in row:
-            pdf_name = cell.offset(column=-2).value.split("(")[0].strip()  # 파일 이름에서 (1), (2) 등의 부분 제외
+            pdf_name = cell.offset(column=-2).value
             if pdf_name in pdf_files:
                 pdf_path = pdf_dict.get(pdf_name)
                 if pdf_path:
