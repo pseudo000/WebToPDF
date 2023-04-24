@@ -1,22 +1,25 @@
+# 헤들리스 브라우저에서 png->pdf변환까지는 완료
+# 프로그레스바 활성화 
+
 import tkinter.ttk as ttk   
 from tkinter import *  #__all__? filedialog는 서브 모듈이기 때문에 별도 임포트 해줘야 됨 
 from tkinter import filedialog
-import json
-import time
 import openpyxl
 import os
-import shutil
 import PyPDF2
 import re
 import threading
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from PIL import Image
+import io
+import os
 from openpyxl import load_workbook
 from collections import defaultdict
 from shutil import copyfile
 from PyPDF2 import PdfMerger
+import tkinter.messagebox as mbox
+
+
 
 root = Tk()
 root.title("SP IMPORT")
@@ -57,55 +60,56 @@ def savemerged_path():
     txt_mergedpdf_path.insert(0,savemerged_selected)
     return savemerged_selected
 
-# print WebtoPDF
-def PrintSetUp():
-    chrome_options = Options()
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    app_state = {
-        "recentDestinations": [
-            {
-                "id": "Save as PDF",
-                "origin": "local",
-                "account": ""
-            }
-        ],
-        "selectedDestinationId": "Save as PDF",
-        "version": 2,
-        "isLandscapeEnabled": False,
-        "pageSize": 'A4',
-        "scalingType": 3,
-        "scaling": "40",
-        "isHeaderFooterEnabled": False,
-        "isCssBackgroundEnabled": True,
-        "isColorEnabled": False,
-        "isCollateEnabled": True
-    }
-    prefs = {
-        'printing.print_preview_sticky_settings.appState': json.dumps(app_state),
-        "download.default_directory": "C:/Users/swwoo/Downloads" # 원하는 다운로드 경로로 변경
-    }
-    chrome_options.add_experimental_option('prefs', prefs)
-    chrome_options.add_argument('--kiosk-printing')
-    return chrome_options
 
+def WebToPDF(url,file_name):
+    DRIVER_PATH = 'chromedriver.exe'
 
-def WebToPDF(url):
-    chrome_options = PrintSetUp()
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.implicitly_wait(20)
+    # headless 모드로 Chrome 실행
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+
+    driver = webdriver.Chrome(DRIVER_PATH, options=options)
     driver.get(url)
-    wait = WebDriverWait(driver, 30)
-    wait.until(EC.presence_of_all_elements_located)
-    time.sleep(5)
-    driver.execute_script('return window.print()')
-    time.sleep(1)
+
+    # 웹페이지 스크롤 조정 (수평스크롤, 수직스크롤, a4용지는 대략 가로 약 793픽셀, 세로 약 1123픽셀)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    # 스크린샷 이미지 크기 조정
+    width = driver.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);") 
+    height = driver.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
+    driver.set_window_size(width, height)
+
+    # 스크린샷 이미지 저장
+    png = driver.get_screenshot_as_png()
+    im = Image.open(io.BytesIO(png)).convert('RGB')
+    im.save(os.path.join(txt_frame1_path.get(), file_name + '.png'))
+
+    # 스크린샷 이미지를 A4 크기로 나누어 PDF 파일 생성
+    scale = 5
+    a4_width = int(297 * scale)  
+    a4_height = int(420 * scale)  
+
+    im = Image.open(os.path.join(txt_frame1_path.get(), file_name + '.png'))
+    im_width, im_height = im.size
+
+    pages = []
+    for y in range(0, im_height, a4_height):
+        for x in range(0, im_width, a4_width):
+            box = (x, y, x+a4_width, y+a4_height)
+            pages.append(im.crop(box))
+
+    pdf_path = os.path.join(txt_frame1_path.get(), file_name + '.pdf')
+    pages[0].save(pdf_path, save_all=True, append_images=pages[1:])
+
     driver.quit()
+    os.remove(os.path.join(txt_frame1_path.get(), file_name + '.png'))
+
 
 
 def start_process():
-    adddrpath_selected = txt_frame1_path.get()
     xl_file_path = txt_xls_path.get()
-    # xl_file_path = files    #'C:\\import\\HSCODE.xlsx'
     workbook = openpyxl.load_workbook(xl_file_path, data_only=True)
     worksheet = workbook.worksheets[0]
 
@@ -115,21 +119,21 @@ def start_process():
             file_name = item[0].value
 
             try:
-                WebToPDF(url)
-
-                file_count = 0
-                filename = os.path.join(adddrpath_selected, f"{file_name}.pdf")
-        
-                while os.path.exists(filename):
-                    file_count += 1
-                    filename = os.path.join(adddrpath_selected, f"{file_name} ({file_count}).pdf")
-            
-                shutil.move(max([adddrpath_selected + "\\" + f for f in os.listdir(adddrpath_selected)], key=os.path.getmtime), filename)  #'C:\\Users\\swwoo\\Downloads'
+                WebToPDF(url,file_name)
 
             except Exception as e:
-                # print(f'Error processing URL {url}: {e}')
-                print(url + '실패')
+                print(file_name + '실패')
 
+        # 진행바 업데이트
+        p_var.set((row / worksheet.max_row) * 100)
+        progress_bar.update()
+        root.update()  # UI 업데이트 강제 수행
+
+    p_var.set(100)
+    mbox.showinfo("COMPLETE", "작업이 모두 완료되었습니다.")
+    p_var.set(0)
+    
+    
 def run_thread():
     # 스레드 생성 및 시작
     thread = threading.Thread(target=start_process)
@@ -309,6 +313,9 @@ btn_mergedpdf_path.pack(side="right")
 frame_progress = LabelFrame(root, text="진행상황")
 frame_progress.pack(fill="x")
 
+p_var = DoubleVar()
+progress_bar = ttk.Progressbar(frame_progress, maximum=100, variable=p_var)
+progress_bar.pack(fill="x")
 
 
 # 종료 프레임
@@ -319,9 +326,7 @@ btn_close = Button(close_frame, padx=5, pady=5, text="CLOSE", width=12)
 btn_close.pack()
 
 
-p_var = DoubleVar()
-progress_bar = ttk.Progressbar(frame_progress, maximum=100, variable=p_var)
-progress_bar.pack(fill="x")
+
 
 
 
