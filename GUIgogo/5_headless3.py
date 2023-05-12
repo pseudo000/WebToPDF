@@ -352,3 +352,4 @@ root.mainloop()
 # pyinstaller -w -F --add-data '*.png;.' 5_add...............
 # "C:\Users\swwoo\Desktop\sp import\WebToPDF\GUIgogo\5_headless3.py"
 # pyinstaller -w -F --onefile --add-binary "chromedriver.exe;." --add-binary "C:\Program Files\Google\Chrome\Application\chrome.exe;." "C:\Users\swwoo\Desktop\sp import\WebToPDF\GUIgogo\5_headless3.py"
+# pyinstaller -w -F "C:\Users\swwoo\Desktop\sp import\WebToPDF\GUIgogo\5_headless3.py"

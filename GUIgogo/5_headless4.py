@@ -20,6 +20,7 @@ from collections import defaultdict
 from shutil import copyfile
 from PyPDF2 import PdfMerger
 import tkinter.messagebox as mbox
+import time
 
 
 
@@ -66,18 +67,16 @@ def savemerged_path():
 def WebToPDF(url,file_name):
     DRIVER_PATH = 'chromedriver.exe'
 
-    # headless 모드로 Chrome 실행
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
-    options.add_argument('--single-process')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--start-minimized')
-
+    # options.add_argument('--single-process')
+    # options.add_argument('--disable-dev-shm-usage')
 
     driver = webdriver.Chrome(DRIVER_PATH, options=options)
     driver.get(url)
+    # time.sleep(2)
 
     # 웹페이지 스크롤 조정 (수평스크롤, 수직스크롤, a4용지는 대략 가로 약 793픽셀, 세로 약 1123픽셀)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
