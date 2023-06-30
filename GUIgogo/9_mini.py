@@ -27,7 +27,7 @@ from selenium.webdriver.common.by import By
 import time
 from selenium.common.exceptions import TimeoutException
 from PyPDF2 import PdfFileReader, PdfFileWriter
-
+from fpdf import FPDF
 
 
 root = Tk()
@@ -70,6 +70,27 @@ def savemerged_path():
     return savemerged_selected
 
 
+def convert_png_to_pdf(png_path, pdf_path):
+    # PNG 이미지를 열고 크기를 가져옵니다
+    image = Image.open(png_path)
+
+    # 이미지 크기를 원하는 크기로 조정합니다
+    target_width = 210  # 210mm
+    target_height = 297  # 297mm
+    image = image.resize((int(target_width), int(target_height)))
+
+    # PDF를 생성할 FPDF 객체를 생성합니다
+    pdf = FPDF(unit="mm", format=(target_width, target_height))  # A4 용지 크기
+
+    # PDF에 이미지를 추가합니다
+    pdf.add_page()
+    pdf.image(png_path, x=0, y=0, w=target_width, h=target_height)
+
+    # PDF 파일을 저장합니다
+    pdf.output(pdf_path, "F")
+
+
+
 def WebToPDF(url, file_name):
     DRIVER_PATH = 'chromedriver.exe'
 
@@ -107,13 +128,25 @@ def WebToPDF(url, file_name):
     # 스크롤된 화면의 스크린샷을 찍습니다
     png = driver.get_screenshot_as_png()
     im = Image.open(io.BytesIO(png)).convert('RGB')
-    im.save(os.path.join(txt_frame1_path.get(), file_name + '.pdf'))
+
+    # 스크린샷의 해상도를 조정합니다
+    dpi = 100  # 원하는 해상도
+    new_width = int(initial_width * dpi / 96)
+    new_height = int(initial_height * dpi / 96)
+    im = im.resize((new_width, new_height), resample=Image.LANCZOS)
+
+    # 이미지를 파일로 저장합니다
+    png_path = os.path.join(txt_frame1_path.get(), file_name + '.png')
+    im.save(png_path)
 
     # 원래 창의 크기로 되돌립니다
     driver.set_window_size(initial_width, initial_height)
 
-    driver.quit()
+    pdf_path = os.path.join(txt_frame1_path.get(), file_name + '.pdf')
+    convert_png_to_pdf(png_path, pdf_path)
 
+    driver.quit()
+    os.remove(png_path)
 
 
 
